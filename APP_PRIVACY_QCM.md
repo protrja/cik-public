@@ -7,7 +7,7 @@ Base : build candidat V1 (Bloc 4 révisé, 20 septembre 2026), `docs/CIK_V1_DATA
 
 Recalculé le 20 septembre 2026 contre l'état de `main` : code réel de PostHog (`store/analytics.ts`, `store/analyticsContract.ts`), RevenueCat (`store/purchases.ts`), identité pseudonyme (`store/identity.ts`), consentement (`store/analyticsConsent.ts`, `components/cik/AnalyticsTracker.tsx`) et couche Supabase (`supabase/functions`, `supabase/migrations`). Les trois réponses ci-dessous sont inchangées par ce recalcul.
 
-Recalcul complémentaire du 20 septembre 2026 incluant le **Session Replay** PostHog (`@posthog/react-native-plugin` 2.9.4, `store/analytics.ts`, `store/sessionReplayPolicy.ts`) : aucune nouvelle catégorie, aucune réponse de haut niveau modifiée. Vérifié une dernière fois le 20 septembre 2026 contre `store/analytics.ts`, `store/sessionReplayPolicy.ts` et la checklist de dérive du dashboard.
+Recalcul du 30 septembre 2026 : **Session Replay OFF en V1** (décision propriétaire du 26 septembre 2026, `store/sessionReplaySwitch.ts`) — aucune capture d'écran collectée. Aucune catégorie ni réponse de haut niveau modifiée : les trois types déclarés restent exacts.
 
 ## Réponse générale
 - Vous ou vos partenaires collectez-vous des données depuis cette app ? **Oui**
@@ -29,7 +29,7 @@ Recalcul complémentaire du 20 septembre 2026 incluant le **Session Replay** Pos
 - Finalités : Analytics
 - Linked to User : **Yes**
 - Tracking : **No**
-- Justification : les 8 events du contrat fermé (`store/analyticsContract.ts`) — progression onboarding, affichage et action du paywall, étapes du wizard, calcul du Flex (sans montant), ouverture de l'app — envoyés à PostHog liés à l'identifiant pseudonyme, **et les captures d'écran masquées du Session Replay** (tout texte et toute image masqués). Apple range sous Product Interaction les « taps, clicks, scrolling information […] or other information about how the user interacts with the app » : aucune nouvelle catégorie, sous trois conditions vérifiables dans le code (`captureLog: false`, `captureNetworkTelemetry: false`, `errorTracking.autocapture: false`). `captureTouches: false` retire même les coordonnées de tap : la collecte est **réduite** par rapport à un replay standard.
+- Justification : les 8 events du contrat fermé (`store/analyticsContract.ts`) — progression onboarding, affichage et action du paywall, étapes du wizard, calcul du Flex (sans montant), ouverture de l'app — envoyés à PostHog liés à l'identifiant pseudonyme. Apple range sous Product Interaction les « taps, clicks, scrolling information […] or other information about how the user interacts with the app » : aucune nouvelle catégorie, sous trois conditions vérifiables dans le code (`captureLog: false`, `captureNetworkTelemetry: false`, `errorTracking.autocapture: false`).
 
 ### Purchases → Purchase History
 - Collecté : Oui
@@ -44,7 +44,7 @@ Recalcul complémentaire du 20 septembre 2026 incluant le **Session Replay** Pos
 - Financial Info — jamais transmis ; les montants et soldes restent sur l'appareil et dans la sauvegarde iCloud privée de l'utilisateur.
 - Location (Precise / Coarse) — GeoIP désactivé côté SDK PostHog et côté projet, adresse IP non conservée (Task 8) ; aucune autre source de localisation.
 - Identifiers → Device ID — non déclaré : l'audit du SDK (`posthog-react-native` / `@posthog/core`) montre que `$device_id` n'est jamais renseigné (aucun appel ne fixe la propriété persistée `DeviceId`) ; la clé part donc `undefined` et disparaît de la charge JSON envoyée. Aucun identifiant d'installation persistant n'est donc réellement transmis par CiK.
-- Diagnostics (Other Diagnostic Data) — aucun SDK de crash ou de performance ; PostHog ne capture ni logs de console (`captureLog: false`), ni télémétrie réseau (`captureNetworkTelemetry: false`), ni erreurs ni crashs (`errorTracking.autocapture: false`, `exceptionSteps` coupé), ni clics de rage (`rageClickConfig.enabled: false`) ; le Session Replay ne transporte que des captures masquées, sans coordonnées de tap.
+- Diagnostics (Other Diagnostic Data) — aucun SDK de crash ou de performance ; PostHog ne capture ni logs de console (`captureLog: false`), ni télémétrie réseau (`captureNetworkTelemetry: false`), ni erreurs ni crashs (`errorTracking.autocapture: false`, `exceptionSteps` coupé), ni clics de rage (`rageClickConfig.enabled: false`).
 - Contact Info, Health & Fitness, Sensitive Info, Contacts, User Content, Browsing/Search History, Other Data — aucune collecte, aucun SDK concerné.
 - Usage Data → Advertising Data / Other Usage Data — aucune collecte : la liste des events est fermée (`store/analyticsContract.ts`), aucune capture automatique n'est activée.
 - **Aucune donnée, déclarée ou non, n'est utilisée pour du Tracking au sens Apple.** Aucun identifiant publicitaire, aucun App Tracking Transparency, aucun SDK publicitaire, aucun partage avec un data broker, aucun rapprochement avec des données tierces. `NSPrivacyTracking` vaut `false` dans le manifeste applicatif (`app.json`).
@@ -52,7 +52,7 @@ Recalcul complémentaire du 20 septembre 2026 incluant le **Session Replay** Pos
 ## Points vérifiés
 - Données financières jamais transmises ; sauvegarde iCloud dans le container privé de l'utilisateur, inaccessible à CiK depuis un serveur.
 - Face ID : authentification entièrement gérée par iOS ; CiK ne reçoit qu'un succès ou un échec.
-- IP non conservée par PostHog, GeoIP désactivé (SDK et projet) ; rétention PostHog : 12 mois pour les events (plan Free du projet CiK, confirmé le 18 septembre 2026 — aucun passage à un plan payant connu à cette date) et 30 jours pour les relectures d'écran (confirmé dans les Project settings le 20 septembre 2026).
+- IP non conservée par PostHog, GeoIP désactivé (SDK et projet) ; rétention PostHog : 12 mois pour les events (plan Free du projet CiK, confirmé le 18 septembre 2026 — aucun passage à un plan payant connu à cette date).
 - Métadonnées techniques ajoutées automatiquement à chaque event par `posthog-react-native` / `@posthog/core` : `$device_type`, `$app_build`, `$app_name`, `$app_namespace`, `$app_version`, `$device_manufacturer`, `$device_name` (nom générique du modèle depuis iOS 16, jamais le nom personnalisé de l'appareil), `$os_name`, `$os_version`, `$is_emulator`, `$locale`, `$timezone`, `$session_id` (identifiant de session tournant), `$lib`, `$lib_version` ; et, une seule fois, sur l'event technique `$identify` : `$anon_distinct_id` (identifiant anonyme interne généré par le SDK, distinct de l'identifiant pseudonyme CiK). Aucune de ces valeurs ne porte de donnée financière ou de texte libre.
 
 ## Vérifications finales avant publication
@@ -73,16 +73,12 @@ réponses ci-dessus dans App Store Connect.
 2. **PostHog — configuration projet conforme au code.** Le SDK coupe déjà côté client
    (`disableGeoip: true`, `captureAppLifecycleEvents: false`, `preloadFeatureFlags: false`,
    `disableRemoteFeatureFlags: true`, `disableSurveys: true`, `rageClickConfig.enabled: false`,
-   `errorTracking.autocapture: false`, host `https://eu.i.posthog.com`) et active le Session Replay
-   sous consentement uniquement (`enableSessionReplay: true`, `captureTouches: false`,
-   `maskAllTextInputs: true`, `maskAllImages: true`, `maskAllSandboxedViews: true`,
-   `captureLog: false`, `captureNetworkTelemetry: false`,
-   `screenshotModeBackgroundCapture: false`, `sampleRate: 1`). Confirmer côté **projet** PostHog,
+   `errorTracking.autocapture: false`, host `https://eu.i.posthog.com`) et désactive le Session Replay
+   en V1 (`enableSessionReplay: SESSION_REPLAY_ENABLED` à `false`, commandes de replay jamais branchées). Confirmer côté **projet** PostHog,
    par la checklist de dérive (`docs/ops/ANALYTICS_DATA_SOP.md` §10) : adresse IP non conservée,
    enrichissement GeoIP désactivé, surveys et error tracking inactifs, rétention des events
-   12 mois, *Record user sessions* activé (au moment prévu avant la QA du candidat ; désactivé
-   d'ici là), rétention des replays 30 jours (confirmée le 20 septembre 2026), capture réseau /
-   console / erreur désactivée, masking projet au maximum, aucune intégration ni export. Une GeoIP
+   12 mois, *Record user sessions* **OFF**, capture réseau /
+   console / erreur désactivée, aucune intégration ni export. Une GeoIP
    active côté projet rendrait **Coarse Location** déclarable ; une capture réseau ou console
    active rendrait **Diagnostics** déclarable.
 
@@ -91,7 +87,7 @@ réponses ci-dessus dans App Store Connect.
    ni `Podfile.lock`, donc la version RevenueCat effective est résolue au build EAS. Sur le build
    candidat : relire le `PrivacyInfo.xcprivacy` du pod RevenueCat (attendu : `PurchaseHistory` seul —
    toute autre entrée, notamment un identifiant d'appareil, ajouterait une catégorie), puis générer
-   le privacy report agrégé depuis Xcode et le comparer aux trois types déclarés ici. Sur le même build : relire le `PrivacyInfo.xcprivacy` du pod `PostHog` (embarqué par `@posthog/react-native-plugin` 2.9.4 ; le package npm n'en contient aucun) et la ligne `PostHog (3.76.x)` du `Podfile.lock` — une version inférieure à 3.73.3 rendrait le masquage non fail-closed.
+   le privacy report agrégé depuis Xcode et le comparer aux trois types déclarés ici. Sur le même build : relire le `PrivacyInfo.xcprivacy` du pod `PostHog` (embarqué par `@posthog/react-native-plugin` 2.9.4, dormant en V1) et le comparer aux types déclarés.
 
 ## À revalider en continu
 - Tout ajout de SDK réseau, d'event ou de propriété rend ce questionnaire obsolète.
